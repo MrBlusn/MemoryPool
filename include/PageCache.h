@@ -9,7 +9,7 @@ namespace MyMemoryPool
 class PageCache
 {
 public:
-    static const size_t PAGE_SIZE = 4096; // 4K页大小
+    static const size_t PAGE_SIZE = 4096; // 4KB，页大小
 
     static PageCache& getInstance()
     {
