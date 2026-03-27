@@ -467,17 +467,17 @@ public:
     }
 };
 
-//int main() 
-//{
-//    std::cout << "Starting performance tests..." << std::endl;
-//    
-//    // 预热系统
-//    PerformanceTest::warmup();
-//    
-//    // 运行测试
-//    PerformanceTest::testSmallAllocation();
-//    PerformanceTest::testMultiThreaded();
-//    PerformanceTest::testMixedSizes();
-//    
-//    return 0;
-//}
+int main() 
+{
+   std::cout << "Starting performance tests..." << std::endl;
+   
+   // 预热系统
+   PerformanceTest::warmup();
+   
+   // 运行测试
+   PerformanceTest::testSmallAllocation();
+   PerformanceTest::testMultiThreaded();
+   PerformanceTest::testMixedSizes();
+   
+   return 0;
+}

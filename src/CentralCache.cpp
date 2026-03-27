@@ -99,6 +99,7 @@ void* CentralCache::fetchRange(size_t index)
                 // 1.CentralCache 管理的是小块内存，这些内存可能不连续
                 // 2.PageCache 的 deallocateSpan 要求归还连续的内存
                 size_t trackerIndex = spanCount_++;
+                
                 if (trackerIndex < spanTrackers_.size())
                 {
                     spanTrackers_[trackerIndex].spanAddr.store(start, std::memory_order_release);
@@ -292,7 +293,9 @@ void* CentralCache::fetchFromPageCache(size_t size)
 SpanTracker* CentralCache::getSpanTracker(void* blockAddr)
 {
     // 遍历spanTrackers_数组，找到blockAddr所属的span
-    for (size_t i = 0; i < spanCount_.load(std::memory_order_relaxed); ++i)
+    size_t trackerCount = spanCount_.load(std::memory_order_relaxed);
+    size_t scanLimit = std::min(trackerCount, spanTrackers_.size());
+    for (size_t i = 0; i < scanLimit; ++i)
     {
         void* spanAddr = spanTrackers_[i].spanAddr.load(std::memory_order_relaxed);
         size_t numPages = spanTrackers_[i].numPages.load(std::memory_order_relaxed);

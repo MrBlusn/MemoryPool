@@ -72,12 +72,17 @@ void testMultiThreading()
     {
         try 
         {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<size_t> sizeDist(1, 256);
+            std::uniform_int_distribution<int> coinDist(0, 1);
+
             std::vector<std::pair<void*, size_t>> allocations;
             allocations.reserve(ALLOCS_PER_THREAD);
             
             for (int i = 0; i < ALLOCS_PER_THREAD && !has_error; ++i) 
             {
-                size_t size = (rand() % 256 + 1) * 8;
+                size_t size = sizeDist(gen) * 8;
                 void* ptr = MemoryPool::allocate(size);
                 
                 if (!ptr) 
@@ -89,9 +94,10 @@ void testMultiThreading()
                 
                 allocations.push_back({ptr, size});
                 
-                if (rand() % 2 && !allocations.empty()) 
+                if (coinDist(gen) && !allocations.empty()) 
                 {
-                    size_t index = rand() % allocations.size();
+                    std::uniform_int_distribution<size_t> indexDist(0, allocations.size() - 1);
+                    size_t index = indexDist(gen);
                     MemoryPool::deallocate(allocations[index].first, 
                                          allocations[index].second);
                     allocations.erase(allocations.begin() + index);
