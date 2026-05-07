@@ -64,26 +64,26 @@ void testMultiThreading()
 {
     std::cout << "Running multi-threading test..." << std::endl;
 
-    const int NUM_THREADS = 4;
+    const int NUM_THREADS = 4;              //配置测试规模：4 个线程，每线程最多做 1000 次操作。
     const int ALLOCS_PER_THREAD = 1000;
-    std::atomic<bool> has_error{false};
+    std::atomic<bool> has_error{false};     //跨线程共享错误标记。任一线程出错就置 true，其他线程可尽快停止。
     
     auto threadFunc = [&has_error]() 
     {
         try 
         {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<size_t> sizeDist(1, 256);
-            std::uniform_int_distribution<int> coinDist(0, 1);
+            std::random_device rd;          //每个线程各自初始化随机数引擎
+            std::mt19937 gen(rd());         
+            std::uniform_int_distribution<size_t> sizeDist(1, 256);   //sizeDist 生成 1~256 的随机数（后面乘 8 得到分配大小）。
+            std::uniform_int_distribution<int> coinDist(0, 1);        //coinDist 生成 0/1，模拟“是否释放”
 
-            std::vector<std::pair<void*, size_t>> allocations;
+            std::vector<std::pair<void*, size_t>> allocations;        //保存当前线程尚未释放的内存块（指针+大小），并提前预留容量减少扩容开销。
             allocations.reserve(ALLOCS_PER_THREAD);
             
             for (int i = 0; i < ALLOCS_PER_THREAD && !has_error; ++i) 
             {
-                size_t size = sizeDist(gen) * 8;
-                void* ptr = MemoryPool::allocate(size);
+                size_t size = sizeDist(gen) * 8;                    //随机分配大小，范围 8~2048，且按 8 字节对齐。
+                void* ptr = MemoryPool::allocate(size);             
                 
                 if (!ptr) 
                 {
@@ -92,19 +92,19 @@ void testMultiThreading()
                     break;
                 }
                 
-                allocations.push_back({ptr, size});
+                allocations.push_back({ptr, size});                //把新分配块记录到本线程待释放列表。
                 
-                if (coinDist(gen) && !allocations.empty()) 
+                if (coinDist(gen) && !allocations.empty())         //约 50% 概率触发一次随机释放（并确保列表非空）。
                 {
                     std::uniform_int_distribution<size_t> indexDist(0, allocations.size() - 1);
-                    size_t index = indexDist(gen);
+                    size_t index = indexDist(gen);                                                  //在当前待释放列表里随机挑一个下标。
                     MemoryPool::deallocate(allocations[index].first, 
                                          allocations[index].second);
-                    allocations.erase(allocations.begin() + index);
+                    allocations.erase(allocations.begin() + index);                                 //释放这块内存，并从列表移除记录。
                 }
             }
             
-            for (const auto& alloc : allocations) 
+            for (const auto& alloc : allocations)                      //循环结束后清理线程内剩余未释放块，避免泄漏。
             {
                 MemoryPool::deallocate(alloc.first, alloc.second);
             }
